@@ -48,4 +48,4 @@ Route::middleware('auth')->group(function () {
 });
 
 // Route untuk autentikasi (default dari Laravel Breeze)
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
