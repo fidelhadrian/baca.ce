@@ -2,49 +2,40 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 // Halaman Utama (Welcome Page)
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('home');
 
 // Dashboard Redirect Berdasarkan Role
 Route::get('/dashboard', function () {
-    $user = auth()->user();
+    // Mengambil role pengguna
+    $role = Auth::user()->roles->pluck('name')->first();
 
     // Redirect berdasarkan role
-    if ($user->roles()->where('name', 'superadmin')->exists()) {
-        return redirect('/superadmin/dashboard');
-    } elseif ($user->roles()->where('name', 'admin')->exists()) {
-        return redirect('/admin/dashboard');
-    } elseif ($user->roles()->where('name', 'student')->exists()) {
-        return redirect('/student/dashboard');
-    }
-
-    abort(403, 'Unauthorized - Role not found');
+    return match ($role) {
+        'superadmin' => redirect()->route('superadmin.dashboard'),
+        'admin' => redirect()->route('admin.dashboard'),
+        'student' => redirect()->route('student.dashboard'),
+        default => abort(403, 'Unauthorized - Role not found')
+    };
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Routes Protected dengan Authentication
-Route::middleware('auth')->group(function () {
-    // Student Dashboard
-    Route::get('/student/dashboard', function () {
-        return view('student.dashboard');
-    })->name('student.dashboard');
-
-    // Admin Dashboard
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
-
-    // Superadmin Dashboard
-    Route::get('/superadmin/dashboard', function () {
-        return view('superadmin.dashboard');
-    })->name('superadmin.dashboard');
+// Routes Protected dengan Authentication dan Role-based Dashboards
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Dashboard Berdasarkan Role
+    Route::view('/student/dashboard', 'student.dashboard')->name('student.dashboard');
+    Route::view('/admin/dashboard', 'admin.dashboard')->name('admin.dashboard');
+    Route::view('/superadmin/dashboard', 'superadmin.dashboard')->name('superadmin.dashboard');
 
     // Profile Management
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::controller(ProfileController::class)->group(function () {
+        Route::get('/profile', 'edit')->name('profile.edit');
+        Route::patch('/profile', 'update')->name('profile.update');
+        Route::delete('/profile', 'destroy')->name('profile.destroy');
+    });
 });
 
 // Route untuk autentikasi (default dari Laravel Breeze)
