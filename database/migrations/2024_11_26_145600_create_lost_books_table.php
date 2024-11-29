@@ -10,9 +10,10 @@ return new class extends Migration
     {
         Schema::create('lost_books', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('book_loan_id')->constrained()->onDelete('cascade');  // Referensi ke book_loans
-            $table->foreignId('book_id')->constrained()->onDelete('cascade');  // Referensi ke books
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');  // Referensi ke users (siapa yang melaporkan)
+            $table->foreignId('book_loan_id')->constrained()->onDelete('cascade');  // Reference to book_loans
+            $table->foreignId('book_id')->constrained()->onDelete('cascade');  // Reference to books
+            $table->string('user_id'); // Change foreign key to user_id (use personal_id as it references users)
+            $table->foreign('user_id')->references('personal_id')->on('users')->onDelete('cascade'); // Corrected foreign key reference
             $table->date('date_reported');
             $table->enum('replacement_status', ['pending', 'replaced'])->default('pending');
             $table->timestamps();
