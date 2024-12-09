@@ -17,3 +17,6 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+# Ignore AdminLTE dist and plugins folder
+public/adminlte/dist/
+public/adminlte/plugins/
