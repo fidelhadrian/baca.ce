@@ -1,11 +1,13 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\BookController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StudentController;
 use App\Http\Controllers\VisitorController;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 // Root Route (Welcome Page)
 Route::get('/', function () {
@@ -25,6 +27,7 @@ Route::get('/dashboard', function () {
         return redirect()->route('login');
     }
 
+    // Role-based redirection
     switch ($user->role->name) {
         case 'superadmin':
             return redirect()->route('superadmin.dashboard');
@@ -49,30 +52,44 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->name('supe
     Route::get('/dashboard', function () {
         return view('1_superadmin.dashboard');
     })->name('dashboard');
-    // Add superadmin specific routes here
+
+    // Example: Route for managing users and other resources
+    // Route::resource('users', UserController::class);
 });
 
 // Admin Routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('2_admin.dashboard');
-    })->name('dashboard');
-    // Add admin specific routes here
+    Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
+    // Resource route for managing books
+    Route::resource('books', BookController::class); // Manage books
+    Route::resource('students', StudentController::class); // Manage students
+    Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
+    Route::get('/trashed', [StudentController::class, 'trashed'])->name('trashed');
+    Route::post('/restore/{nim}', [StudentController::class, 'restore'])->name('restore');
+    Route::delete('/force-delete/{nim}', [StudentController::class, 'forceDelete'])->name('forceDelete');
+
 });
 
 // Student Routes
 Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')->group(function () {
+    // Dashboard route for students
     Route::get('/dashboard', function () {
         return view('3_student.dashboard');
     })->name('dashboard');
-    Route::get('/books', function () {
-        return view('student.books.index'); // Assuming you have a view for listing books
-    })->name('books.index');
-    // Add student specific routes here
+
+    // Book-related routes for students
+    Route::prefix('books')->name('books.')->group(function () {
+        Route::get('/', [BookController::class, 'index'])->name('index'); // View all books
+        Route::get('/{isbn}', [BookController::class, 'show'])->name('show'); // View a single book detail
+        Route::post('/borrow/{isbn}', [BookController::class, 'borrowBook'])->name('borrow'); // Borrow a book
+        Route::get('/history', [BookController::class, 'loanHistory'])->name('history'); // View loan history
+        Route::post('/renew/{loanId}', [BookController::class, 'renewLoan'])->name('renew'); // Renew loan
+        Route::post('/return/{loanId}', [BookController::class, 'returnBook'])->name('return'); // Return a book
+    });
 });
 
 // Visitor Attendance Route (POST Request for barcode scan)
 Route::post('/visitors/store', [VisitorController::class, 'store'])->name('visitors.store');
 
 // Include Authentication Routes
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
