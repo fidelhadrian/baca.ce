@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Alert;
 use App\Imports\StudentsImport;
 use App\Models\Student;
 use Illuminate\Http\Request;
@@ -60,17 +61,36 @@ class StudentController extends Controller
      */
     public function store(Request $request)
     {
+        // Validasi data
         $validatedData = $request->validate([
-            'nim' => 'required|unique:students,nim|max:10',
-            'name' => 'required|max:255',
+            'nim' => 'required|numeric|unique:students,nim|min:1000000000', // NIM harus lebih dari 10 angka
+            'name' => 'required|string|max:255|unique:students,name', // Nama harus string
             'angkatan' => 'required|in:2019,2020,2021,2023',
             'gender' => 'required|in:L,P',
             'status' => 'required|in:Aktif,Non-Aktif',
+        ], [
+            'nim.unique' => 'NIM sudah terdaftar.',
+            'nim.min' => 'NIM harus terdiri dari lebih dari 10 .',
+            'name.unique' => 'Nama sudah terdaftar.',
+            'name.string' => 'Nama harus berupa teks.',
         ]);
 
-        Student::create($validatedData);
+        try {
+            // Simpan data mahasiswa
+            Student::create($validatedData);
 
-        return redirect()->route('admin.students.index')->with('success', 'Data mahasiswa berhasil ditambahkan!');
+            // Menggunakan SweetAlert dengan info
+            alert()->success('SuccessAlert', 'Data mahasiswa berhasil ditambahkan.');
+
+            // Redirect ke halaman index
+            return redirect()->route('admin.students.index');
+        } catch (\Exception $e) {
+            // Jika ada error
+            alert()->error('ErrorAlert', 'Terjadi kesalahan: ' . $e->getMessage());
+
+            // Redirect kembali ke halaman create
+            return redirect()->route('admin.students.create');
+        }
     }
 
     /**
@@ -112,8 +132,12 @@ class StudentController extends Controller
         // Soft delete data
         $student->delete();
 
-        return redirect()->route('admin.students.index')->with('success', 'Data mahasiswa berhasil dihapus!');
+        // Menambahkan pesan flash ke session
+        session()->flash('success', 'Data mahasiswa berhasil dihapus!');
+
+        return redirect()->route('admin.students.index');
     }
+
     public function trashed()
     {
         // Mengambil data mahasiswa yang dihapus (soft delete)
@@ -143,8 +167,21 @@ class StudentController extends Controller
         $student = Student::onlyTrashed()->findOrFail($nim);
         $student->forceDelete();
 
-        return redirect()->route('admin.trashed')->with('success', 'Data mahasiswa berhasil dihapus secara permanen!');
+        return redirect()->route('admin.students.index')->with('success', 'Data mahasiswa berhasil dihapus secara permanen!');
     }
+    // public function forceDeleteSelected(Request $request)
+    // {
+    //     // Ambil data mahasiswa yang dipilih
+    //     $studentNims = $request->input('students');
+
+    //     // Hapus permanen mahasiswa yang dipilih
+    //     Student::onlyTrashed()->whereIn('nim', $studentNims)->forceDelete();
+
+    //     // Flash message sukses
+    //     session()->flash('success', 'Data mahasiswa yang dipilih berhasil dihapus secara permanen!');
+
+    //     return redirect()->route('admin.trashed');
+    // }
 
     public function import(Request $request)
     {
@@ -169,4 +206,50 @@ class StudentController extends Controller
             }
         }
     }
+    // Method destroySelected di controller
+    public function destroySelected(Request $request)
+    {
+        // Ambil ID mahasiswa yang dipilih
+        $studentIds = json_decode($request->input('students'));
+
+        // Hapus mahasiswa yang terpilih
+        Student::whereIn('nim', $studentIds)->delete();
+
+        // Flash message sukses
+        session()->flash('success', 'Data mahasiswa yang dipilih berhasil dihapus!');
+
+        return redirect()->route('admin.students.index');
+    }
+    public function handleSelectedAction(Request $request)
+    {
+        $action = $request->input('action');
+        $studentNims = $request->input('students');
+
+        if ($action == 'restore') {
+            // Restore data mahasiswa yang dipilih
+            Student::onlyTrashed()->whereIn('nim', $studentNims)->restore();
+            session()->flash('success', 'Data mahasiswa yang dipilih berhasil dipulihkan!');
+        } elseif ($action == 'forceDelete') {
+            // Force delete data mahasiswa yang dipilih
+            Student::onlyTrashed()->whereIn('nim', $studentNims)->forceDelete();
+            session()->flash('success', 'Data mahasiswa yang dipilih berhasil dihapus secara permanen!');
+        }
+
+        return redirect()->route('admin.trashed');
+    }
+
+    // public function restoreSelected(Request $request)
+    // {
+    //     // Ambil data mahasiswa yang dipilih
+    //     $studentNims = $request->input('students');
+
+    //     // Restore mahasiswa yang dipilih
+    //     Student::onlyTrashed()->whereIn('nim', $studentNims)->restore();
+
+    //     // Flash message sukses
+    //     session()->flash('success', 'Data mahasiswa yang dipilih berhasil di-restore!');
+
+    //     return redirect()->route('admin.trashed');
+    // }
+
 }

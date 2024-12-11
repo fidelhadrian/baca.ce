@@ -64,6 +64,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('books', BookController::class); // Manage books
     Route::resource('students', StudentController::class); // Manage students
     Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
+    // Route untuk menangani aksi restore atau force delete
+    Route::post('/students/handle-selected-action', [StudentController::class, 'handleSelectedAction'])->name('handleSelectedAction');
+
+    Route::delete('/students/destroy/selected', [StudentController::class, 'destroySelected'])->name('students.destroy.selected');
+    // Route::post('/students/restore/selected', [StudentController::class, 'restoreSelected'])->name('restore.selected');
+    // Route::post('/students/force-delete/selected', [StudentController::class, 'forceDeleteSelected'])->name('forceDelete.selected');
     Route::get('/trashed', [StudentController::class, 'trashed'])->name('trashed');
     Route::post('/restore/{nim}', [StudentController::class, 'restore'])->name('restore');
     Route::delete('/force-delete/{nim}', [StudentController::class, 'forceDelete'])->name('forceDelete');

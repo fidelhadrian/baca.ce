@@ -19,12 +19,12 @@
 
         <div class="card-body">
             <div class="row mb-3">
-                <!-- Tombol Tambah Mahasiswa berada di kiri -->
+                <!-- Tombol Tambah Mahasiswa -->
                 <a href="{{ route('admin.students.create') }}" class="btn btn-success col-12 col-md-2">
                     Tambah Mahasiswa
                 </a>
 
-                <!-- Search Form di kanan -->
+                <!-- Search Form -->
                 <form action="{{ route('admin.students.index') }}" method="GET"
                     class="form-inline col-12 col-md-10 d-flex justify-content-md-end">
                     <input type="text" name="search" class="form-control form-control-sm" placeholder="Search..."
@@ -33,9 +33,17 @@
                 </form>
             </div>
 
+            <form action="{{ route('admin.students.destroy.selected') }}" method="POST" id="delete-selected-form">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger" id="delete-selected-btn" style="display: none;">Hapus yang
+                    dipilih</button>
+            </form>
+
             <table class="table table-bordered table-striped">
                 <thead>
                     <tr>
+                        <th><input type="checkbox" id="select-all"> </th> <!-- Checkbox untuk memilih semua -->
                         <th style="width: 10px">#</th>
                         <th>NIM</th>
                         <th>Nama</th>
@@ -44,12 +52,14 @@
                         <th>Status</th>
                         <th>Created At</th>
                         <th>Updated At</th>
-                        <th>Actions</th> <!-- Kolom untuk action Edit dan Hapus -->
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($students as $index => $student)
                         <tr class="align-middle">
+                            <td><input type="checkbox" class="student-checkbox" data-id="{{ $student->nim }}"
+                                    value="{{ $student->nim }}"></td>
                             <td>{{ $loop->iteration + ($students->currentPage() - 1) * $students->perPage() }}</td>
                             <td>{{ $student->nim }}</td>
                             <td>{{ $student->name }}</td>
@@ -65,14 +75,14 @@
 
                                 <!-- Tombol Hapus -->
                                 <form action="{{ route('admin.students.destroy', $student->nim) }}" method="POST"
-                                    style="display:inline-block;"
-                                    onsubmit="return confirm('Are you sure you want to delete this student?');">
+                                    id="delete-form-{{ $student->nim }}" style="display:none;">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm">
-                                        Hapus
-                                    </button>
                                 </form>
+                                <button type="button" class="btn btn-danger btn-sm"
+                                    onclick="confirmDelete({{ $student->nim }})">
+                                    Hapus
+                                </button>
                             </td>
                         </tr>
                     @endforeach
@@ -91,5 +101,6 @@
         style="position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center;">
         <i class="bi bi-trash"></i>
     </a>
-
+    {{-- untuk cek penggunaan script di halaman index ini ada di 2_admin.studentsData.scriptsStudentsPage --}}
+    @include('2_admin.studentsData.scriptsStudentsPage')
 @endsection
